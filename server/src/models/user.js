@@ -17,9 +17,12 @@ const userSchema = new mongoose.Schema({
 });
 
 // Enforces one user per (provider, providerUserId) pair across the whole collection.
+// partialFilterExpression is required here: without it, MongoDB indexes an empty
+// authProviders array as a null entry, and every password-only user (empty array)
+// would collide on that same null key after the second signup.
 userSchema.index(
   { "authProviders.provider": 1, "authProviders.providerUserId": 1 },
-  { unique: true }
+  { unique: true, partialFilterExpression: { "authProviders.0": { $exists: true } } }
 );
 
 export const User = mongoose.model("User", userSchema);
